@@ -1,0 +1,172 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Sudoku Solver</title>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(225deg, #ffffff, #e4b0ff);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            gap: 40px;
+        }
+
+        .input-section {
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            color: #9333c4;
+            text-decoration: underline;
+            margin-bottom: 1rem;
+        }
+
+        .sudoku-grid {
+            display: grid;
+            grid-template-columns: repeat(9, 40px);
+            grid-template-rows: repeat(9, 40px);
+            gap: 2px;
+            background: #f9f9f9;
+            padding: 5px;
+            border-radius: 5px;
+        }
+
+        .sudoku-cell {
+            width: 40px;
+            height: 40px;
+            text-align: center;
+            font-size: 18px;
+            border: 1px solid #000;
+            background: white;
+        }
+
+        .hint {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        button {
+            background: #9333c4;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.4s ease, transform 0.3s ease;
+        }
+
+            button:hover {
+                background: #421266;
+                transform: scale(1.1);
+            }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="input-section">
+            <h1>Sudoku Solver</h1>
+            <div id="board" class="sudoku-grid"></div>
+            <p class="hint">0's are considered as blanks.</p>
+            <div class="button-container">
+                <button onclick="resetSudoku()">Reset</button>
+                <button onclick="solveSudoku()">Solve</button>
+            </div>
+        </div>
+        <div id="result" class="sudoku-grid"></div>
+    </div>
+
+    <script>
+        function createBoard() {
+            const boardDiv = document.getElementById("board");
+            boardDiv.innerHTML = "";
+            for (let i = 0; i < 81; i++) {
+                let input = document.createElement("input");
+                input.type = "text";
+                input.maxLength = 1;
+                input.classList.add("sudoku-cell");
+                input.addEventListener("keydown", moveNext);
+                boardDiv.appendChild(input);
+            }
+        }
+
+        function moveNext(event) {
+            let cells = Array.from(document.querySelectorAll(".sudoku-cell"));
+            let index = cells.indexOf(event.target);
+            if ((event.key === "Enter" || event.key === " ") && index < 80) {
+                cells[index + 1].focus();
+                event.preventDefault();
+            }
+        }
+
+        function resetSudoku() {
+            document.querySelectorAll(".sudoku-cell").forEach(cell => cell.value = "");
+            document.getElementById("result").innerHTML = "";
+        }
+
+        async function solveSudoku() {
+            let board = [];
+            let inputs = document.querySelectorAll("#board .sudoku-cell");
+            for (let i = 0; i < 9; i++) {
+                board.push([]);
+                for (let j = 0; j < 9; j++) {
+                    let value = inputs[i * 9 + j].value;
+                    board[i].push(value ? parseInt(value) : 0);
+                }
+            }
+
+            try {
+                const response = await fetch("http://127.0.0.1:5000/solve", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ board })
+                });
+                const data = await response.json();
+                if (data.status === "success") {
+                    displaySudoku(data.board);
+                } else {
+                    alert("No solution exists.");
+                }
+            } catch (error) {
+                alert("An error occurred. Please try again.");
+            }
+        }
+
+        function displaySudoku(board) {
+            let resultDiv = document.getElementById("result");
+            resultDiv.innerHTML = "";
+            for (let i = 0; i < 9; i++) {
+                for (let j = 0; j < 9; j++) {
+                    let cell = document.createElement("div");
+                    cell.classList.add("sudoku-cell");
+                    cell.textContent = board[i][j] === 0 ? "" : board[i][j];
+                    resultDiv.appendChild(cell);
+                }
+            }
+        }
+
+        createBoard();
+    </script>
+</body>
+</html>
